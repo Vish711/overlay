@@ -1,0 +1,19 @@
+{
+  "name": "overlay",
+  "version": "0.1.0",
+  "description": "Lightweight desktop overlay for real-time pets and GIFs between friends",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node src/main/server.js",
+    "dev": "concurrently \"npm run server\" \"electron .\"",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {
+    "electron": "^33.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

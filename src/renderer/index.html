@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    h1 { margin-top: 0; }
+    input, button {
+      padding: 8px 12px;
+      margin: 4px 0;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background: #2a2a2a;
+      color: #fff;
+    }
+    button:hover { background: #3a3a3a; }
+    #friends { margin-top: 16px; }
+    .friend {
+      padding: 8px;
+      margin: 4px 0;
+      background: #2a2a2a;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Overlay</h1>
+  <input id="room" placeholder="Room ID" />
+  <button id="join">Join Room</button>
+  <div id="friends"></div>
+  <script>
+    const ws = new WebSocket('ws://localhost:8080');
+    const roomInput = document.getElementById('room');
+    const joinBtn = document.getElementById('join');
+    const friendsDiv = document.getElementById('friends');
+
+    joinBtn.onclick = () => {
+      ws.send(JSON.stringify({ type: 'join', roomId: roomInput.value }));
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'presence') {
+        friendsDiv.innerHTML = msg.users.map(u =>
+          `<div class="friend">${u.id || 'unknown'}</div>`
+        ).join('');
+      }
+    };
+  </script>
+</body>
+</html>
