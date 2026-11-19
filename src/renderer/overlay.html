@@ -145,8 +145,38 @@
       ctx.fillRect(x + 8*s, y + 5*s, 1*s, 1*s);
     }
 
-    const drawFns = { cat: drawCatSprite, dog: drawDogSprite, ghost: drawGhostSprite, fire: drawFireSprite };
-    const petColors = { cat: '#ff6b6b', dog: '#4ecdc4', ghost: '#ffe66d', fire: '#ff8a5c' };
+    function drawStarSprite(ctx, x, y, frame, color) {
+      const s = 4;
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 5*s, y + 1*s, 6*s, 2*s);
+      ctx.fillRect(x + 3*s, y + 3*s, 10*s, 2*s);
+      ctx.fillRect(x + 1*s, y + 5*s, 14*s, 2*s);
+      ctx.fillRect(x + 3*s, y + 7*s, 10*s, 2*s);
+      ctx.fillRect(x + 5*s, y + 9*s, 6*s, 2*s);
+      ctx.fillRect(x + 6*s, y + 11*s, 4*s, 2*s);
+      if (frame > 1) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x + 7*s, y + 4*s, 2*s, 2*s);
+      }
+    }
+
+    function drawHeartSprite(ctx, x, y, frame, color) {
+      const s = 4;
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 2*s, y + 2*s, 5*s, 5*s);
+      ctx.fillRect(x + 9*s, y + 2*s, 5*s, 5*s);
+      ctx.fillRect(x + 1*s, y + 7*s, 7*s, 5*s);
+      ctx.fillRect(x + 8*s, y + 7*s, 7*s, 5*s);
+      ctx.fillRect(x + 4*s, y + 12*s, 4*s, 2*s);
+      ctx.fillRect(x + 5*s, y + 14*s, 2*s, 2*s);
+      if (frame > 1) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x + 3*s, y + 3*s, 2*s, 2*s);
+        ctx.fillRect(x + 10*s, y + 3*s, 2*s, 2*s);
+      }
+    }
+
+    const drawFns = { cat: drawCatSprite, dog: drawDogSprite, ghost: drawGhostSprite, fire: drawFireSprite, star: drawStarSprite, heart: drawHeartSprite };
 
     const petImages = {};
 
@@ -167,7 +197,8 @@
       const pet = {
         id: 'pet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
         name: data.name,
-        src: data.src || '',
+        shape: data.shape || data.name.toLowerCase(),
+        color: data.color || '#ff6b6b',
         x: data.x,
         y: data.y,
         width: data.width || 64,
@@ -268,8 +299,8 @@
         if (pet.isGif && pet.src && petImages[pet.src]) {
           ctx.drawImage(petImages[pet.src], pet.x, pet.y, pet.width, pet.height);
         } else {
-          const drawFn = drawFns[pet.name] || drawCatSprite;
-          drawFn(ctx, pet.x, pet.y, pet.animFrame, petColors[pet.name] || '#ff6b6b');
+          const drawFn = drawFns[pet.shape] || drawFns[pet.name] || drawCatSprite;
+          drawFn(ctx, pet.x, pet.y, pet.animFrame, pet.color || '#ff6b6b');
         }
       }
       requestAnimationFrame(render);
