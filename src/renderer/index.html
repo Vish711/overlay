@@ -25,21 +25,41 @@
       background: #2a2a2a;
       border-radius: 4px;
     }
+    #status { margin-top: 8px; color: #888; }
+    #send-msg { margin-top: 12px; }
+    #send-msg input { width: 200px; }
+    #send-msg button { margin-left: 4px; }
   </style>
 </head>
 <body>
   <h1>Overlay</h1>
   <input id="room" placeholder="Room ID" />
   <button id="join">Join Room</button>
+  <div id="status">Disconnected</div>
   <div id="friends"></div>
+  <div id="send-msg">
+    <input id="msg" placeholder="Type a message..." />
+    <button id="send">Send</button>
+  </div>
   <script>
-    const ws = new WebSocket('ws://localhost:8080');
+    const ws = new WebSocket('ws://localhost:55555');
     const roomInput = document.getElementById('room');
     const joinBtn = document.getElementById('join');
     const friendsDiv = document.getElementById('friends');
+    const statusDiv = document.getElementById('status');
+    const msgInput = document.getElementById('msg');
+    const sendBtn = document.getElementById('send');
+
+    ws.onopen = () => { statusDiv.textContent = 'Connected'; };
+    ws.onclose = () => { statusDiv.textContent = 'Disconnected'; };
 
     joinBtn.onclick = () => {
       ws.send(JSON.stringify({ type: 'join', roomId: roomInput.value }));
+    };
+
+    sendBtn.onclick = () => {
+      ws.send(JSON.stringify({ type: 'send', text: msgInput.value, roomId: roomInput.value }));
+      msgInput.value = '';
     };
 
     ws.onmessage = (e) => {
@@ -48,6 +68,9 @@
         friendsDiv.innerHTML = msg.users.map(u =>
           `<div class="friend">${u.id || 'unknown'}</div>`
         ).join('');
+      }
+      if (msg.type === 'send') {
+        friendsDiv.innerHTML += `<div class="friend">[${msg.roomId}] ${msg.text}</div>`;
       }
     };
   </script>

@@ -31,6 +31,20 @@
     const GRID_SIZE = 64;
     const grid = {};
 
+    const ws = new WebSocket('ws://localhost:55555');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'join', roomId: 'default' }));
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'pet') {
+        addPet(msg);
+      }
+      if (msg.type === 'remove') {
+        removePet(msg.id);
+      }
+    };
+
     function gridKey(x, y) {
       const gx = Math.floor(x / GRID_SIZE);
       const gy = Math.floor(y / GRID_SIZE);

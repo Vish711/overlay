@@ -1,6 +1,26 @@
 const { WebSocketServer } = require('ws');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
-const wss = new WebSocketServer({ port: 8080 });
+const server = http.createServer((req, res) => {
+  if (req.url === '/') {
+    fs.readFile(path.join(__dirname, '../renderer/index.html'), (err, data) => {
+      if (err) {
+        res.writeHead(500);
+        res.end('Error loading page');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(data);
+    });
+  } else {
+    res.writeHead(404);
+    res.end('Not found');
+  }
+});
+
+const wss = new WebSocketServer({ server });
 
 const rooms = new Map();
 
@@ -30,6 +50,24 @@ wss.on('connection', (ws) => {
     if (msg.type === 'send' && room) {
       rooms.get(room).forEach((client) => {
         if (client !== ws && client.readyState === 1) {
+          client.send(JSON.stringify({ type: 'send', text: msg.text, roomId: room }));
+        }
+      });
+    }
+
+    if (msg.type === 'pet' && room) {
+      msg.roomId = room;
+      rooms.get(room).forEach((client) => {
+        if (client !== ws && client.readyState === 1) {
+          client.send(JSON.stringify(msg));
+        }
+      });
+    }
+
+    if (msg.type === 'remove' && room) {
+      msg.roomId = room;
+      rooms.get(room).forEach((client) => {
+        if (client !== ws && client.readyState === 1) {
           client.send(JSON.stringify(msg));
         }
       });
@@ -46,4 +84,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-console.log('Overlay server running on ws://localhost:8080');
+server.listen(55555, () => {
+  console.log('Overlay server running on http://localhost:55555');
+});
