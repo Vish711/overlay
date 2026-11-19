@@ -37,23 +37,37 @@ const wss = new WebSocketServer({ server });
 
 const rooms = new Map();
 
+function broadcastPresence(roomId) {
+  const users = Array.from(rooms.get(roomId).values());
+  const data = JSON.stringify({ type: 'presence', users: users.map(u => ({ id: u.id, name: u.name })) });
+  rooms.get(roomId).forEach((u) => {
+    if (u.ws.readyState === 1) {
+      u.ws.send(data);
+    }
+  });
+}
+
 wss.on('connection', (ws) => {
   let room = null;
+  let userId = null;
+  let userName = null;
 
   ws.on('message', (data) => {
     const msg = JSON.parse(data);
 
     if (msg.type === 'join') {
       if (!rooms.has(msg.roomId)) {
-        rooms.set(msg.roomId, new Set());
+        rooms.set(msg.roomId, new Map());
       }
       room = msg.roomId;
-      rooms.get(room).add(ws);
-      ws.send(JSON.stringify({ type: 'presence', users: Array.from(rooms.get(room)) }));
+      userId = msg.id || 'user-' + Math.random().toString(36).substr(2, 6);
+      userName = msg.name || 'player';
+      rooms.get(room).set(userId, { ws, id: userId, name: userName });
+      broadcastPresence(room);
     }
 
     if (msg.type === 'leave' && room) {
-      rooms.get(room).delete(ws);
+      rooms.get(room).delete(userId);
       if (rooms.get(room).size === 0) {
         rooms.delete(room);
       }
@@ -70,18 +84,22 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'pet' && room) {
       msg.roomId = room;
-      rooms.get(room).forEach((client) => {
-        if (client !== ws && client.readyState === 1) {
-          client.send(JSON.stringify(msg));
+      msg.userId = userId;
+      msg.userName = userName;
+      rooms.get(room).forEach((u) => {
+        if (u.ws.readyState === 1) {
+          u.ws.send(JSON.stringify(msg));
         }
       });
     }
 
     if (msg.type === 'remove' && room) {
       msg.roomId = room;
-      rooms.get(room).forEach((client) => {
-        if (client !== ws && client.readyState === 1) {
-          client.send(JSON.stringify(msg));
+      msg.userId = userId;
+      msg.userName = userName;
+      rooms.get(room).forEach((u) => {
+        if (u.ws.readyState === 1) {
+          u.ws.send(JSON.stringify(msg));
         }
       });
     }
@@ -89,10 +107,11 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     if (room && rooms.has(room)) {
-      rooms.get(room).delete(ws);
+      rooms.get(room).delete(userId);
       if (rooms.get(room).size === 0) {
         rooms.delete(room);
       }
+      broadcastPresence(room);
     }
   });
 });

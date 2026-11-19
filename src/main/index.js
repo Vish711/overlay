@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, nativeTheme } = require('electron');
+const { app, BrowserWindow, screen } = require('electron');
 const path = require('path');
 
 let overlayWindow = null;
@@ -12,11 +12,18 @@ function createOverlay() {
     height: bounds.height,
     x: bounds.x,
     y: bounds.y,
+    show: false,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
+    focusable: false,
     skipTaskbar: true,
-    resizable: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    closable: false,
     hasShadow: false,
     backgroundColor: '#00000000',
     webPreferences: {
@@ -26,17 +33,36 @@ function createOverlay() {
     }
   });
 
+  // Same idea as a localhost server: this process can be running while the
+  // person keeps using the machine. The window only draws. It never activates,
+  // and mouse and keyboard go to the windows underneath.
+  const stayOutOfTheWay = () => {
+    if (!overlayWindow || overlayWindow.isDestroyed()) return;
+    overlayWindow.setIgnoreMouseEvents(true);
+    overlayWindow.setFocusable(false);
+  };
+  stayOutOfTheWay();
   overlayWindow.setAlwaysOnTop(true, 'screen-saver');
   overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  overlayWindow.on('show', stayOutOfTheWay);
 
   overlayWindow.loadFile(path.join(__dirname, '..', 'renderer', 'overlay.html'));
+  overlayWindow.once('ready-to-show', () => {
+    stayOutOfTheWay();
+    overlayWindow.showInactive();
+  });
 
   overlayWindow.on('closed', () => {
     overlayWindow = null;
   });
 }
 
-app.whenReady().then(createOverlay);
+const onlyInstance = app.requestSingleInstanceLock();
+if (!onlyInstance) {
+  app.quit();
+} else {
+  app.whenReady().then(createOverlay);
+}
 
 app.on('window-all-closed', () => {
   app.quit();

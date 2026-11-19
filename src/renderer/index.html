@@ -34,6 +34,7 @@
 <body>
   <h1>Overlay</h1>
   <input id="room" placeholder="Room ID" />
+  <input id="name" placeholder="Your name" value="player1" />
   <button id="join">Join Room</button>
   <div id="status">Disconnected</div>
   <div id="friends"></div>
@@ -48,6 +49,7 @@
   <script>
     const ws = new WebSocket('ws://localhost:55555');
     const roomInput = document.getElementById('room');
+    const nameInput = document.getElementById('name');
     const joinBtn = document.getElementById('join');
     const friendsDiv = document.getElementById('friends');
     const statusDiv = document.getElementById('status');
@@ -55,41 +57,91 @@
     const sendBtn = document.getElementById('send');
     const petList = document.getElementById('pet-list');
 
+    const uid = 'user-' + Math.random().toString(36).substr(2, 6);
     const availablePets = [
-      { name: 'cat', src: 'https://media.giphy.com/media/MDJ7IWxgDYtb2/giphy.gif', width: 64, height: 64 },
-      { name: 'dog', src: 'https://media.giphy.com/media/3oriO04MiRIucIKngJ/giphy.gif', width: 64, height: 64 },
-      { name: 'ghost', src: 'https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif', width: 64, height: 64 },
-      { name: 'fire', src: 'https://media.giphy.com/media/26tOZ42Mg6pbTevuM/giphy.gif', width: 64, height: 64 }
+      { name: 'cat', color: '#ff6b6b', shape: 'cat' },
+      { name: 'dog', color: '#4ecdc4', shape: 'dog' },
+      { name: 'ghost', color: '#ffe66d', shape: 'ghost' },
+      { name: 'fire', color: '#ff8a5c', shape: 'fire' }
     ];
 
     availablePets.forEach((pet, i) => {
-      const img = document.createElement('img');
-      img.src = pet.src;
-      img.width = 64;
-      img.height = 64;
-      img.style.margin = '4px';
-      img.style.cursor = 'pointer';
-      img.style.border = '2px solid transparent';
-      img.title = pet.name;
-      img.onclick = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      canvas.style.margin = '4px';
+      canvas.style.cursor = 'pointer';
+      canvas.style.border = '2px solid transparent';
+      canvas.title = pet.name;
+      const ctx = canvas.getContext('2d');
+      drawPixelArt(ctx, pet.shape, pet.color);
+      canvas.onclick = () => {
+        const dataUrl = canvas.toDataURL();
         ws.send(JSON.stringify({
           type: 'pet',
           name: pet.name,
-          src: pet.src,
+          src: dataUrl,
           x: 100 + i * 80,
           y: 100,
-          width: pet.width,
-          height: pet.height
+          width: 64,
+          height: 64
         }));
       };
-      petList.appendChild(img);
+      petList.appendChild(canvas);
     });
+
+    function drawPixelArt(ctx, shape, color) {
+      const s = 4;
+      ctx.fillStyle = color;
+      if (shape === 'cat') {
+        ctx.fillRect(4*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(8*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(3*s, 5*s, 8*s, 6*s);
+        ctx.fillRect(2*s, 6*s, 1*s, 2*s);
+        ctx.fillRect(11*s, 6*s, 1*s, 2*s);
+        ctx.fillRect(4*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(9*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(5*s, 7*s, 1*s, 1*s);
+        ctx.fillRect(9*s, 7*s, 1*s, 1*s);
+      } else if (shape === 'dog') {
+        ctx.fillRect(3*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(9*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(2*s, 5*s, 10*s, 7*s);
+        ctx.fillRect(1*s, 7*s, 2*s, 3*s);
+        ctx.fillRect(12*s, 7*s, 2*s, 3*s);
+        ctx.fillRect(4*s, 12*s, 3*s, 2*s);
+        ctx.fillRect(8*s, 12*s, 3*s, 2*s);
+        ctx.fillRect(5*s, 8*s, 1*s, 1*s);
+        ctx.fillRect(9*s, 8*s, 1*s, 1*s);
+      } else if (shape === 'ghost') {
+        ctx.fillRect(3*s, 1*s, 9*s, 11*s);
+        ctx.fillRect(2*s, 3*s, 1*s, 8*s);
+        ctx.fillRect(13*s, 3*s, 1*s, 8*s);
+        ctx.fillRect(2*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(6*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(10*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(14*s, 11*s, 2*s, 2*s);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(5*s, 5*s, 2*s, 2*s);
+        ctx.fillRect(9*s, 5*s, 2*s, 2*s);
+      } else if (shape === 'fire') {
+        ctx.fillRect(5*s, 12*s, 5*s, 2*s);
+        ctx.fillRect(4*s, 10*s, 7*s, 2*s);
+        ctx.fillRect(5*s, 8*s, 5*s, 2*s);
+        ctx.fillRect(3*s, 6*s, 9*s, 2*s);
+        ctx.fillRect(5*s, 4*s, 5*s, 2*s);
+        ctx.fillRect(6*s, 2*s, 3*s, 2*s);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(7*s, 3*s, 1*s, 1*s);
+        ctx.fillRect(8*s, 5*s, 1*s, 1*s);
+      }
+    }
 
     ws.onopen = () => { statusDiv.textContent = 'Connected'; };
     ws.onclose = () => { statusDiv.textContent = 'Disconnected'; };
 
     joinBtn.onclick = () => {
-      ws.send(JSON.stringify({ type: 'join', roomId: roomInput.value }));
+      ws.send(JSON.stringify({ type: 'join', roomId: roomInput.value, name: nameInput.value, id: uid }));
     };
 
     sendBtn.onclick = () => {
@@ -101,7 +153,7 @@
       const msg = JSON.parse(e.data);
       if (msg.type === 'presence') {
         friendsDiv.innerHTML = msg.users.map(u =>
-          `<div class="friend">${u.id || 'unknown'}</div>`
+          `<div class="friend">${u.name || u.id || 'unknown'}</div>`
         ).join('');
       }
       if (msg.type === 'send') {
