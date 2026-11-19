@@ -47,6 +47,17 @@ function broadcastPresence(roomId) {
   });
 }
 
+function broadcastRoomEvent(roomId, event) {
+  if (rooms.has(roomId)) {
+    const data = JSON.stringify(event);
+    rooms.get(roomId).forEach((u) => {
+      if (u.ws.readyState === 1) {
+        u.ws.send(data);
+      }
+    });
+  }
+}
+
 wss.on('connection', (ws) => {
   let room = null;
   let userId = null;
@@ -58,16 +69,20 @@ wss.on('connection', (ws) => {
     if (msg.type === 'join') {
       if (!rooms.has(msg.roomId)) {
         rooms.set(msg.roomId, new Map());
+        broadcastRoomEvent(msg.roomId, { type: 'room_created', roomId: msg.roomId });
       }
       room = msg.roomId;
       userId = msg.id || 'user-' + Math.random().toString(36).substr(2, 6);
       userName = msg.name || 'player';
       rooms.get(room).set(userId, { ws, id: userId, name: userName });
       broadcastPresence(room);
+      broadcastRoomEvent(room, { type: 'user_joined', user: { id: userId, name: userName } });
     }
 
     if (msg.type === 'leave' && room) {
       rooms.get(room).delete(userId);
+      broadcastRoomEvent(room, { type: 'user_left', user: { id: userId, name: userName } });
+      broadcastPresence(room);
       if (rooms.get(room).size === 0) {
         rooms.delete(room);
       }
@@ -108,10 +123,11 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     if (room && rooms.has(room)) {
       rooms.get(room).delete(userId);
+      broadcastRoomEvent(room, { type: 'user_left', user: { id: userId, name: userName } });
+      broadcastPresence(room);
       if (rooms.get(room).size === 0) {
         rooms.delete(room);
       }
-      broadcastPresence(room);
     }
   });
 });

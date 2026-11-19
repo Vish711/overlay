@@ -36,7 +36,9 @@
   <input id="room" placeholder="Room ID" />
   <input id="name" placeholder="Your name" value="player1" />
   <button id="join">Join Room</button>
+  <button id="create">Create Room</button>
   <div id="status">Disconnected</div>
+  <div id="room-info"></div>
   <div id="friends"></div>
   <div id="pets">
     <h3>Send a pet</h3>
@@ -51,6 +53,8 @@
     const roomInput = document.getElementById('room');
     const nameInput = document.getElementById('name');
     const joinBtn = document.getElementById('join');
+    const createBtn = document.getElementById('create');
+    const roomInfo = document.getElementById('room-info');
     const friendsDiv = document.getElementById('friends');
     const statusDiv = document.getElementById('status');
     const msgInput = document.getElementById('msg');
@@ -144,12 +148,18 @@
       ws.send(JSON.stringify({ type: 'join', roomId: roomInput.value, name: nameInput.value, id: uid }));
     };
 
+    createBtn.onclick = () => {
+      const roomId = 'room-' + Math.random().toString(36).substr(2, 6);
+      roomInput.value = roomId;
+      ws.send(JSON.stringify({ type: 'join', roomId: roomId, name: nameInput.value, id: uid }));
+    };
+
     sendBtn.onclick = () => {
       ws.send(JSON.stringify({ type: 'send', text: msgInput.value, roomId: roomInput.value }));
       msgInput.value = '';
     };
 
-    ws.onmessage = (e) => {
+   ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
       if (msg.type === 'presence') {
         friendsDiv.innerHTML = msg.users.map(u =>
@@ -158,6 +168,15 @@
       }
       if (msg.type === 'send') {
         friendsDiv.innerHTML += `<div class="friend">[${msg.roomId}] ${msg.text}</div>`;
+      }
+      if (msg.type === 'room_created') {
+        roomInfo.textContent = 'Room "' + msg.roomId + '" created!';
+      }
+      if (msg.type === 'user_joined') {
+        roomInfo.textContent = (roomInfo.textContent || '') + ' ' + msg.user.name + ' joined';
+      }
+      if (msg.type === 'user_left') {
+        roomInfo.textContent = (roomInfo.textContent || '') + ' ' + msg.user.name + ' left';
       }
     };
   </script>
