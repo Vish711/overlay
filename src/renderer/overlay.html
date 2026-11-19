@@ -28,6 +28,103 @@
     canvas.height = window.innerHeight;
 
     const pets = [];
+    const GRID_SIZE = 64;
+    const grid = {};
+
+    function gridKey(x, y) {
+      const gx = Math.floor(x / GRID_SIZE);
+      const gy = Math.floor(y / GRID_SIZE);
+      return gx + ',' + gy;
+    }
+
+    function addToGrid(pet) {
+      const key = gridKey(pet.x, pet.y);
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(pet);
+    }
+
+    function removeFromGrid(pet) {
+      const key = gridKey(pet.x, pet.y);
+      if (grid[key]) {
+        grid[key] = grid[key].filter(p => p !== pet);
+        if (grid[key].length === 0) delete grid[key];
+      }
+    }
+
+    function getCollidingPets(pet) {
+      const gx = Math.floor(pet.x / GRID_SIZE);
+      const gy = Math.floor(pet.y / GRID_SIZE);
+      const result = [];
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const key = (gx + dx) + ',' + (gy + dy);
+          if (grid[key]) {
+            for (const p of grid[key]) {
+              if (p !== pet) result.push(p);
+            }
+          }
+        }
+      }
+      return result;
+    }
+
+    function addPet(data) {
+      const img = new Image();
+      img.onload = () => {
+        const pet = {
+          id: data.id,
+          image: img,
+          x: data.x,
+          y: data.y,
+          width: data.width || 64,
+          height: data.height || 64,
+          dragging: false,
+          dragOffsetX: 0,
+          dragOffsetY: 0
+        };
+        pets.push(pet);
+        addToGrid(pet);
+      };
+      img.src = data.src;
+    }
+
+    function removePet(id) {
+      const idx = pets.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        removeFromGrid(pets[idx]);
+        pets.splice(idx, 1);
+      }
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      for (let i = pets.length - 1; i >= 0; i--) {
+        const pet = pets[i];
+        if (e.clientX >= pet.x && e.clientX <= pet.x + pet.width &&
+            e.clientY >= pet.y && e.clientY <= pet.y + pet.height) {
+          pet.dragging = true;
+          pet.dragOffsetX = e.clientX - pet.x;
+          pet.dragOffsetY = e.clientY - pet.y;
+          break;
+        }
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      for (const pet of pets) {
+        if (pet.dragging) {
+          removeFromGrid(pet);
+          pet.x = e.clientX - pet.dragOffsetX;
+          pet.y = e.clientY - pet.dragOffsetY;
+          addToGrid(pet);
+        }
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      for (const pet of pets) {
+        pet.dragging = false;
+      }
+    });
 
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
