@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8">
+  <title>Overlay</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -12,13 +14,18 @@
     .container {
       max-width: 480px;
       margin: 0 auto;
-      padding: 24px 16px;
+      padding: 24px 16px 40px;
     }
     h1 {
       font-size: 24px;
       color: #58a6ff;
-      margin-bottom: 20px;
       text-align: center;
+    }
+    .tagline {
+      text-align: center;
+      color: #8b949e;
+      font-size: 13px;
+      margin: 6px 0 18px;
     }
     .card {
       background: #161b22;
@@ -54,21 +61,22 @@
       background: #21262d;
       color: #c9d1d9;
       font-size: 14px;
-      cursor: pointer;
-      transition: background 0.15s;
     }
     button:hover { background: #30363d; }
     button.primary { background: #238636; border-color: #2ea043; color: #fff; }
     button.primary:hover { background: #2ea043; }
+    button:disabled { opacity: 0.45; }
     .status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 13px;
       color: #8b949e;
+      margin-top: 12px;
     }
     .dot {
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #484f58;
     }
@@ -76,404 +84,189 @@
     .dot.disconnected { background: #f85149; }
     .room-info {
       font-size: 13px;
-      color: #58a6ff;
-      padding: 8px 0;
+      color: #8b949e;
+      padding-top: 8px;
+      line-height: 1.45;
       min-height: 20px;
     }
-    .friend-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+    .room-info strong {
+      color: #58a6ff;
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
     }
+    .note {
+      font-size: 13px;
+      color: #d29922;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+    .friend-list { display: flex; flex-wrap: wrap; gap: 6px; }
     .friend {
       padding: 6px 12px;
       background: #21262d;
       border: 1px solid #30363d;
       border-radius: 16px;
       font-size: 13px;
-      color: #c9d1d9;
     }
+    .empty { color: #8b949e; font-size: 13px; }
     .pet-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
     .pet-item {
+      display: block;
       width: 100%;
+      padding: 0;
+      flex: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
       border: 2px solid #30363d;
       border-radius: 8px;
-      cursor: pointer;
       overflow: hidden;
-      transition: border-color 0.15s, transform 0.1s;
       background: #0d1117;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
-    .pet-item:hover { border-color: #58a6ff; transform: scale(1.05); }
-    .pet-item.selected { border-color: #58a6ff; box-shadow: 0 0 8px #58a6ff44; }
     .pet-canvas-wrap {
       width: 100%;
       aspect-ratio: 1;
-      background: #0d1117;
       display: flex;
       align-items: center;
       justify-content: center;
+      background:
+        linear-gradient(#161b22 1px, transparent 1px) 0 0 / 8px 8px,
+        linear-gradient(90deg, #161b22 1px, transparent 1px) 0 0 / 8px 8px,
+        #0d1117;
     }
     .pet-canvas-wrap canvas {
-      width: 100%;
-      height: 100%;
+      width: 78%;
+      height: 78%;
       image-rendering: pixelated;
     }
     .pet-name {
       text-align: center;
-      font-size: 11px;
-      color: #8b949e;
-      padding: 4px;
-    }
-    .pet-msg-input {
-      width: 100%;
-      padding: 6px 8px;
-      border: none;
-      border-top: 1px solid #30363d;
-      background: #0d1117;
-      color: #c9d1d9;
       font-size: 12px;
-      margin-bottom: 0;
+      color: #c9d1d9;
+      padding: 4px 4px 0;
     }
-    .pet-msg-input:focus { outline: none; }
-    .pet-send-btn {
+    .hint { color: #8b949e; font-size: 12px; margin-bottom: 10px; line-height: 1.4; }
+    .chat-log {
+      max-height: 160px;
+      overflow-y: auto;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .chat-line { padding: 6px 0; border-bottom: 1px solid #21262d; }
+    .who { display: block; color: #58a6ff; font-size: 12px; margin-bottom: 2px; }
+    .stage-wrap {
+      position: relative;
+      height: 520px;
+      margin-bottom: 12px;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #090c10;
+    }
+    .stage-wrap canvas {
       width: 100%;
-      padding: 4px;
-      border: none;
-      border-top: 1px solid #30363d;
-      background: #21262d;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+    .stage-note {
+      position: absolute;
+      left: 10px;
+      bottom: 8px;
+      right: 10px;
       color: #8b949e;
-      font-size: 11px;
-      cursor: pointer;
+      font-size: 12px;
+      pointer-events: none;
     }
-    .pet-send-btn:hover { background: #30363d; color: #58a6ff; }
-    .chat-box {
+    a.fullpage {
+      display: inline-block;
+      margin-top: 8px;
+      color: #58a6ff;
+      font-size: 13px;
+    }
+    .pet-item.selected { border-color: #58a6ff; box-shadow: 0 0 0 1px #58a6ff; }
+    .composer {
+      position: absolute;
+      z-index: 2;
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      width: 230px;
+      padding: 6px;
+      background: rgba(22, 27, 34, 0.96);
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
-    .chat-box input { margin-bottom: 0; flex: 1; }
-    .chat-box button { width: auto; white-space: nowrap; }
+    .composer[hidden] { display: none; }
+    .composer input { margin: 0; flex: 1; padding: 8px 10px; }
+    .composer button { flex: 0; padding: 8px 10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Overlay</h1>
+    <p class="tagline">One pet per person, floating on the page. Type under yours. Your friend sees that pet say it.</p>
 
     <div class="card">
-      <h2>Connection</h2>
-      <input id="room" placeholder="Room ID (leave blank for random)" />
-      <input id="name" placeholder="Your name" value="player1" />
-      <div class="btn-row">
-        <button id="join" class="primary">Join Room</button>
-        <button id="create">Create & Join</button>
+      <h2>Room</h2>
+      <input id="server" placeholder="Server (host:port)" />
+      <div class="btn-row" style="margin-bottom: 8px;">
+        <button id="use-server" type="button">Use this server</button>
       </div>
-      <div style="margin-top: 12px;">
-        <span class="status">
-          <span class="dot" id="status-dot"></span>
-          <span id="status">Disconnected</span>
-        </span>
+      <input id="name" placeholder="Your name" value="player" maxlength="20" />
+      <input id="room" placeholder="Room ID — blank makes a new one" maxlength="32" />
+      <div class="btn-row">
+        <button id="join" class="primary" type="button">Join room</button>
+        <button id="leave" type="button">Leave</button>
+      </div>
+      <div class="status">
+        <span class="dot" id="status-dot"></span>
+        <span id="status">Disconnected</span>
       </div>
       <div id="room-info" class="room-info"></div>
+      <div id="note" class="note"></div>
+      <a class="fullpage" href="/overlay" target="_blank">Open a full-page pet window</a>
+    </div>
+
+    <div class="stage-wrap">
+      <canvas id="stage"></canvas>
+      <form id="composer" class="composer" hidden>
+        <input id="pet-line" maxlength="80" placeholder="Message" autocomplete="off" />
+        <button id="pet-send" type="submit">Send</button>
+      </form>
+      <div id="stage-note" class="stage-note"></div>
     </div>
 
     <div class="card">
       <h2>Online</h2>
-      <div id="friends" class="friend-list"></div>
+      <div id="friends" class="friend-list">
+        <span class="empty">Nobody in the room yet.</span>
+      </div>
     </div>
 
     <div class="card">
-      <h2>Send a Pet</h2>
+      <h2>Your pet</h2>
+      <p class="hint">Click an animal to put it on the page. Type in the box under your pet. The bubble says Ready when there is a new line.</p>
       <div id="pet-list" class="pet-grid"></div>
-    </div>
-
-    <div class="card">
-      <h2>Chat</h2>
-      <div id="chat-log" style="max-height: 120px; overflow-y: auto; margin-bottom: 8px; font-size: 13px; color: #8b949e;"></div>
-      <div class="chat-box">
-        <input id="msg" placeholder="Type a message..." />
-        <button id="send">Send</button>
+      <div class="btn-row" style="margin-top: 10px;">
+        <button id="clear-pets" type="button">Hide my pet</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Chat</h2>
-      <div id="chat-log" style="max-height: 120px; overflow-y: auto; margin-bottom: 8px; font-size: 13px; color: #8b949e;"></div>
-      <div class="chat-box">
-        <input id="msg" placeholder="Type a message..." />
-        <button id="send">Send</button>
-      </div>
+      <h2>Activity</h2>
+      <div id="chat-log" class="chat-log"></div>
     </div>
   </div>
-
-  <script>
-    const ws = new WebSocket('ws://localhost:55555');
-    const roomInput = document.getElementById('room');
-    const nameInput = document.getElementById('name');
-    const joinBtn = document.getElementById('join');
-    const createBtn = document.getElementById('create');
-    const roomInfo = document.getElementById('room-info');
-    const friendsDiv = document.getElementById('friends');
-    const chatLog = document.getElementById('chat-log');
-    const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('status');
-    const msgInput = document.getElementById('msg');
-    const sendBtn = document.getElementById('send');
-    const petList = document.getElementById('pet-list');
-
-    const uid = 'user-' + Math.random().toString(36).substr(2, 6);
-
-    const pets = [
-      { name: 'Cat', color: '#ff6b6b', shape: 'cat' },
-      { name: 'Dog', color: '#4ecdc4', shape: 'dog' },
-      { name: 'Ghost', color: '#ffe66d', shape: 'ghost' },
-      { name: 'Fire', color: '#ff8a5c', shape: 'fire' },
-      { name: 'Star', color: '#a29bfe', shape: 'star' },
-      { name: 'Heart', color: '#fd79a8', shape: 'heart' }
-    ];
-
-    const frameSizes = { cat: 16, dog: 16, ghost: 16, fire: 16, star: 16, heart: 16 };
-    const frames = { cat: 4, dog: 4, ghost: 4, fire: 4, star: 2, heart: 2 };
-    const animTimers = {};
-
-    pets.forEach((pet, i) => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'pet-item';
-      wrapper.dataset.name = pet.name;
-
-      const canvasWrap = document.createElement('div');
-      canvasWrap.className = 'pet-canvas-wrap';
-
-      const canvas = document.createElement('canvas');
-      canvas.width = frameSizes[pet.shape] * 4;
-      canvas.height = frameSizes[pet.shape] * 4;
-      canvas.style.imageRendering = 'pixelated';
-
-      const name = document.createElement('div');
-      name.className = 'pet-name';
-      name.textContent = pet.name;
-
-      const msgInput = document.createElement('input');
-      msgInput.className = 'pet-msg-input';
-      msgInput.placeholder = 'type...';
-
-      const sendBtn = document.createElement('button');
-      sendBtn.className = 'pet-send-btn';
-      sendBtn.textContent = 'Send with ' + pet.name;
-
-      canvasWrap.appendChild(canvas);
-      wrapper.appendChild(canvasWrap);
-      wrapper.appendChild(name);
-      wrapper.appendChild(msgInput);
-      wrapper.appendChild(sendBtn);
-      petList.appendChild(wrapper);
-
-      wrapper.onclick = (e) => {
-        if (e.target === msgInput || e.target === sendBtn) return;
-        document.querySelectorAll('.pet-item').forEach(el => el.classList.remove('selected'));
-        wrapper.classList.add('selected');
-        selectedPet = pet;
-      };
-
-      sendBtn.onclick = () => {
-        const text = msgInput.value.trim();
-        if (!text) return;
-        ws.send(JSON.stringify({
-          type: 'send',
-          text: text,
-          roomId: roomInput.value,
-          pet: { name: pet.name, shape: pet.shape, color: pet.color }
-        }));
-        msgInput.value = '';
-      };
-
-      animTimers[pet.name] = { frame: 0, timer: 0 };
-    });
-
-    function drawStarFrame(ctx, frame) {
-      const s = 4;
-      ctx.fillStyle = '#a29bfe';
-      if (frame === 0) {
-        ctx.fillRect(5*s, 1*s, 6*s, 2*s);
-        ctx.fillRect(3*s, 3*s, 10*s, 2*s);
-        ctx.fillRect(1*s, 5*s, 14*s, 2*s);
-        ctx.fillRect(3*s, 7*s, 10*s, 2*s);
-        ctx.fillRect(5*s, 9*s, 6*s, 2*s);
-        ctx.fillRect(6*s, 11*s, 4*s, 2*s);
-      } else {
-        ctx.fillRect(5*s, 1*s, 6*s, 2*s);
-        ctx.fillRect(3*s, 3*s, 10*s, 2*s);
-        ctx.fillRect(1*s, 5*s, 14*s, 2*s);
-        ctx.fillRect(3*s, 7*s, 10*s, 2*s);
-        ctx.fillRect(5*s, 9*s, 6*s, 2*s);
-        ctx.fillRect(6*s, 11*s, 4*s, 2*s);
-        ctx.fillStyle = '#dfe6e9';
-        ctx.fillRect(7*s, 4*s, 2*s, 2*s);
-      }
-    }
-
-    function drawHeartFrame(ctx, frame) {
-      const s = 4;
-      ctx.fillStyle = '#fd79a8';
-      if (frame === 0) {
-        ctx.fillRect(2*s, 2*s, 5*s, 5*s);
-        ctx.fillRect(9*s, 2*s, 5*s, 5*s);
-        ctx.fillRect(1*s, 7*s, 7*s, 5*s);
-        ctx.fillRect(8*s, 7*s, 7*s, 5*s);
-        ctx.fillRect(4*s, 12*s, 4*s, 2*s);
-        ctx.fillRect(5*s, 14*s, 2*s, 2*s);
-      } else {
-        ctx.fillRect(2*s, 2*s, 5*s, 5*s);
-        ctx.fillRect(9*s, 2*s, 5*s, 5*s);
-        ctx.fillRect(1*s, 7*s, 7*s, 5*s);
-        ctx.fillRect(8*s, 7*s, 7*s, 5*s);
-        ctx.fillRect(4*s, 12*s, 4*s, 2*s);
-        ctx.fillRect(5*s, 14*s, 2*s, 2*s);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(3*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(10*s, 3*s, 2*s, 2*s);
-      }
-    }
-
-    function drawFrame(ctx, shape, frame, color) {
-      const s = 4;
-      ctx.fillStyle = color;
-      if (shape === 'cat') {
-        ctx.fillRect(4*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(8*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(3*s, 5*s + frame, 8*s, 6*s);
-        ctx.fillRect(2*s, 6*s + frame, 1*s, 2*s);
-        ctx.fillRect(11*s, 6*s + frame, 1*s, 2*s);
-        ctx.fillRect(4*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(9*s, 11*s, 2*s, 2*s);
-        ctx.fillStyle = '#111';
-        ctx.fillRect(5*s, 7*s, 1*s, 1*s);
-        ctx.fillRect(9*s, 7*s, 1*s, 1*s);
-      } else if (shape === 'dog') {
-        ctx.fillRect(3*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(9*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(2*s, 5*s, 10*s, 7*s);
-        ctx.fillRect(1*s, 7*s + frame, 2*s, 3*s);
-        ctx.fillRect(12*s, 7*s + frame, 2*s, 3*s);
-        ctx.fillRect(4*s, 12*s, 3*s, 2*s);
-        ctx.fillRect(8*s, 12*s, 3*s, 2*s);
-        ctx.fillStyle = '#111';
-        ctx.fillRect(5*s, 8*s, 1*s, 1*s);
-        ctx.fillRect(9*s, 8*s, 1*s, 1*s);
-      } else if (shape === 'ghost') {
-        const wave = (frame % 2 === 0) ? 0 : s;
-        ctx.fillRect(3*s, 1*s, 9*s, 11*s);
-        ctx.fillRect(2*s, 3*s + wave, 1*s, 8*s);
-        ctx.fillRect(13*s, 3*s - wave, 1*s, 8*s);
-        ctx.fillRect(2*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(6*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(10*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(14*s, 11*s, 2*s, 2*s);
-        ctx.fillStyle = '#111';
-        ctx.fillRect(5*s, 5*s, 2*s, 2*s);
-        ctx.fillRect(9*s, 5*s, 2*s, 2*s);
-      } else if (shape === 'fire') {
-        const flicker = (frame % 2 === 0) ? 0 : s;
-        ctx.fillRect(5*s, 12*s, 5*s, 2*s);
-        ctx.fillRect(4*s, 10*s, 7*s, 2*s);
-        ctx.fillRect(5*s, 8*s, 5*s, 2*s);
-        ctx.fillRect(3*s, 6*s, 9*s, 2*s);
-        ctx.fillRect(5*s, 4*s + flicker, 5*s, 2*s);
-        ctx.fillRect(6*s, 2*s + flicker, 3*s, 2*s);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(7*s, 3*s, 1*s, 1*s);
-        ctx.fillRect(8*s, 5*s, 1*s, 1*s);
-      } else if (shape === 'star') {
-        drawStarFrame(ctx, frame);
-      } else if (shape === 'heart') {
-        drawHeartFrame(ctx, frame);
-      }
-    }
-
-    function animatePets() {
-      pets.forEach((pet) => {
-        const item = petList.children[pets.indexOf(pet)];
-        if (!item) return;
-        const canvas = item.querySelector('canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const s = frameSizes[pet.shape];
-        const maxFrames = frames[pet.shape] || 1;
-        const timer = animTimers[pet.name];
-        timer.timer++;
-        if (timer.timer > 20) {
-          timer.frame = (timer.frame + 1) % maxFrames;
-          timer.timer = 0;
-        }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawFrame(ctx, pet.shape, timer.frame, pet.color);
-      });
-      requestAnimationFrame(animatePets);
-    }
-    animatePets();
-
-    ws.onopen = () => {
-      statusDot.className = 'dot connected';
-      statusText.textContent = 'Connected';
-    };
-    ws.onclose = () => {
-      statusDot.className = 'dot disconnected';
-      statusText.textContent = 'Disconnected';
-    };
-
-    joinBtn.onclick = () => {
-      ws.send(JSON.stringify({ type: 'join', roomId: roomInput.value, name: nameInput.value, id: uid }));
-    };
-
-    createBtn.onclick = () => {
-      const roomId = 'room-' + Math.random().toString(36).substr(2, 6);
-      roomInput.value = roomId;
-      ws.send(JSON.stringify({ type: 'join', roomId: roomId, name: nameInput.value, id: uid }));
-    };
-
-    sendBtn.onclick = () => {
-      ws.send(JSON.stringify({ type: 'send', text: msgInput.value, roomId: roomInput.value }));
-      msgInput.value = '';
-    };
-
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'presence') {
-        friendsDiv.innerHTML = msg.users.map(u =>
-          `<div class="friend">${u.name || u.id || 'unknown'}</div>`
-        ).join('');
-      }
-      if (msg.type === 'send') {
-        const entry = document.createElement('div');
-        entry.style.padding = '4px 0';
-        entry.style.borderBottom = '1px solid #21262d';
-        if (msg.pet) {
-          const petIcon = document.createElement('span');
-          petIcon.textContent = '🐾';
-          entry.appendChild(petIcon);
-          entry.appendChild(document.createTextNode(' ' + msg.pet.name + ' says: '));
-          entry.appendChild(document.createTextNode(msg.text));
-        } else {
-          entry.textContent = '[' + msg.roomId + '] ' + msg.text;
-        }
-        chatLog.appendChild(entry);
-        chatLog.scrollTop = chatLog.scrollHeight;
-      }
-      if (msg.type === 'room_created') {
-        roomInfo.textContent = 'Room "' + msg.roomId + '" created!';
-      }
-      if (msg.type === 'user_joined') {
-        roomInfo.textContent = (roomInfo.textContent || '') + ' ' + msg.user.name + ' joined';
-      }
-      if (msg.type === 'user_left') {
-        roomInfo.textContent = (roomInfo.textContent || '') + ' ' + msg.user.name + ' left';
-      }
-    };
-  </script>
+  <script src="/shared/spatial.js"></script>
+  <script src="/shared/movement.js"></script>
+  <script src="/shared/session.js"></script>
+  <script src="/shared/sprites.js"></script>
+  <script src="/js/stage.js"></script>
+  <script src="/js/client.js"></script>
 </body>
 </html>

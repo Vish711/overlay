@@ -1,14 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8">
+  <title>Overlay pets</title>
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      width: 100vw;
-      height: 100vh;
-      background: transparent;
+      width: 100%;
+      height: 100%;
+      background: #090c10;
       overflow: hidden;
+      font-family: system-ui, sans-serif;
     }
     canvas {
       position: absolute;
@@ -16,296 +19,34 @@
       left: 0;
       width: 100%;
       height: 100%;
+      image-rendering: pixelated;
+    }
+    .stage-note {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      color: #8b949e;
+      font-size: 13px;
+      pointer-events: none;
+    }
+    a.back {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      color: #58a6ff;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <canvas id="overlay"></canvas>
-  <script>
-    const canvas = document.getElementById('overlay');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const pets = [];
-    const GRID_SIZE = 64;
-    const grid = {};
-    const ANIM_SPEED = 3;
-    const MOVE_INTERVAL = 120;
-
-    const ws = new WebSocket('ws://localhost:55555');
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'join', roomId: 'default' }));
-    };
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'pet') {
-        addPet(msg);
-      }
-      if (msg.type === 'remove') {
-        removePet(msg.id);
-      }
-    };
-
-    function gridKey(x, y) {
-      const gx = Math.floor(x / GRID_SIZE);
-      const gy = Math.floor(y / GRID_SIZE);
-      return gx + ',' + gy;
-    }
-
-    function addToGrid(pet) {
-      const key = gridKey(pet.x, pet.y);
-      if (!grid[key]) grid[key] = [];
-      grid[key].push(pet);
-    }
-
-    function removeFromGrid(pet) {
-      const key = gridKey(pet.x, pet.y);
-      if (grid[key]) {
-        grid[key] = grid[key].filter(p => p !== pet);
-        if (grid[key].length === 0) delete grid[key];
-      }
-    }
-
-    function getCollidingPets(pet) {
-      const gx = Math.floor(pet.x / GRID_SIZE);
-      const gy = Math.floor(pet.y / GRID_SIZE);
-      const result = [];
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          const key = (gx + dx) + ',' + (gy + dy);
-          if (grid[key]) {
-            for (const p of grid[key]) {
-              if (p !== pet) result.push(p);
-            }
-          }
-        }
-      }
-      return result;
-    }
-
-    function drawCatSprite(ctx, x, y, frame, color) {
-      const s = 4;
-      ctx.fillStyle = color;
-      ctx.fillRect(x + 4*s, y + 3*s, 2*s, 2*s);
-      ctx.fillRect(x + 8*s, y + 3*s, 2*s, 2*s);
-      ctx.fillRect(x + 3*s, y + 5*s, 8*s, 6*s);
-      ctx.fillRect(x + 2*s, y + 6*s + (frame % 2), 1*s, 2*s);
-      ctx.fillRect(x + 11*s, y + 6*s + (frame % 2), 1*s, 2*s);
-      ctx.fillRect(x + 4*s, y + 11*s, 2*s, 2*s);
-      ctx.fillRect(x + 9*s, y + 11*s, 2*s, 2*s);
-      ctx.fillStyle = '#111';
-      ctx.fillRect(x + 5*s, y + 7*s, 1*s, 1*s);
-      ctx.fillRect(x + 9*s, y + 7*s, 1*s, 1*s);
-    }
-
-    function drawDogSprite(ctx, x, y, frame, color) {
-      const s = 4;
-      ctx.fillStyle = color;
-      ctx.fillRect(x + 3*s, y + 3*s, 2*s, 2*s);
-      ctx.fillRect(x + 9*s, y + 3*s, 2*s, 2*s);
-      ctx.fillRect(x + 2*s, y + 5*s, 10*s, 7*s);
-      ctx.fillRect(x + 1*s, y + 7*s + (frame % 2), 2*s, 3*s);
-      ctx.fillRect(x + 12*s, y + 7*s + (frame % 2), 2*s, 3*s);
-      ctx.fillRect(x + 4*s, y + 12*s, 3*s, 2*s);
-      ctx.fillRect(x + 8*s, y + 12*s, 3*s, 2*s);
-      ctx.fillStyle = '#111';
-      ctx.fillRect(x + 5*s, y + 8*s, 1*s, 1*s);
-      ctx.fillRect(x + 9*s, y + 8*s, 1*s, 1*s);
-    }
-
-    function drawGhostSprite(ctx, x, y, frame, color) {
-      const s = 4;
-      const wave = Math.sin(frame * 0.5) * s;
-      ctx.fillStyle = color;
-      ctx.fillRect(x + 3*s, y + 1*s, 9*s, 11*s);
-      ctx.fillRect(x + 2*s, y + 3*s + wave, 1*s, 8*s);
-      ctx.fillRect(x + 13*s, y + 3*s - wave, 1*s, 8*s);
-      ctx.fillRect(x + 2*s, y + 11*s, 2*s, 2*s);
-      ctx.fillRect(x + 6*s, y + 11*s, 2*s, 2*s);
-      ctx.fillRect(x + 10*s, y + 11*s, 2*s, 2*s);
-      ctx.fillRect(x + 14*s, y + 11*s, 2*s, 2*s);
-      ctx.fillStyle = '#111';
-      ctx.fillRect(x + 5*s, y + 5*s, 2*s, 2*s);
-      ctx.fillRect(x + 9*s, y + 5*s, 2*s, 2*s);
-    }
-
-    function drawFireSprite(ctx, x, y, frame, color) {
-      const s = 4;
-      const flicker = Math.sin(frame * 0.8) * s;
-      ctx.fillStyle = color;
-      ctx.fillRect(x + 5*s, y + 12*s, 5*s, 2*s);
-      ctx.fillRect(x + 4*s, y + 10*s, 7*s, 2*s);
-      ctx.fillRect(x + 5*s, y + 8*s, 5*s, 2*s);
-      ctx.fillRect(x + 3*s, y + 6*s, 9*s, 2*s);
-      ctx.fillRect(x + 5*s, y + 4*s + flicker, 5*s, 2*s);
-      ctx.fillRect(x + 6*s, y + 2*s + flicker, 3*s, 2*s);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(x + 7*s, y + 3*s, 1*s, 1*s);
-      ctx.fillRect(x + 8*s, y + 5*s, 1*s, 1*s);
-    }
-
-    function drawStarSprite(ctx, x, y, frame, color) {
-      const s = 4;
-      ctx.fillStyle = color;
-      ctx.fillRect(x + 5*s, y + 1*s, 6*s, 2*s);
-      ctx.fillRect(x + 3*s, y + 3*s, 10*s, 2*s);
-      ctx.fillRect(x + 1*s, y + 5*s, 14*s, 2*s);
-      ctx.fillRect(x + 3*s, y + 7*s, 10*s, 2*s);
-      ctx.fillRect(x + 5*s, y + 9*s, 6*s, 2*s);
-      ctx.fillRect(x + 6*s, y + 11*s, 4*s, 2*s);
-      if (frame > 1) {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(x + 7*s, y + 4*s, 2*s, 2*s);
-      }
-    }
-
-    function drawHeartSprite(ctx, x, y, frame, color) {
-      const s = 4;
-      ctx.fillStyle = color;
-      ctx.fillRect(x + 2*s, y + 2*s, 5*s, 5*s);
-      ctx.fillRect(x + 9*s, y + 2*s, 5*s, 5*s);
-      ctx.fillRect(x + 1*s, y + 7*s, 7*s, 5*s);
-      ctx.fillRect(x + 8*s, y + 7*s, 7*s, 5*s);
-      ctx.fillRect(x + 4*s, y + 12*s, 4*s, 2*s);
-      ctx.fillRect(x + 5*s, y + 14*s, 2*s, 2*s);
-      if (frame > 1) {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(x + 3*s, y + 3*s, 2*s, 2*s);
-        ctx.fillRect(x + 10*s, y + 3*s, 2*s, 2*s);
-      }
-    }
-
-    const drawFns = { cat: drawCatSprite, dog: drawDogSprite, ghost: drawGhostSprite, fire: drawFireSprite, star: drawStarSprite, heart: drawHeartSprite };
-
-    const petImages = {};
-
-    function loadPetImage(src, callback) {
-      if (petImages[src]) {
-        callback(petImages[src]);
-        return;
-      }
-      const img = new Image();
-      img.onload = () => {
-        petImages[src] = img;
-        callback(img);
-      };
-      img.src = src;
-    }
-
-    function addPet(data) {
-      const pet = {
-        id: 'pet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-        name: data.name,
-        shape: data.shape || data.name.toLowerCase(),
-        color: data.color || '#ff6b6b',
-        x: data.x,
-        y: data.y,
-        width: data.width || 64,
-        height: data.height || 64,
-        dragging: false,
-        dragOffsetX: 0,
-        dragOffsetY: 0,
-        animFrame: 0,
-        animTimer: 0,
-        moveTimer: 0,
-        dx: (Math.random() - 0.5) * 2,
-        dy: (Math.random() - 0.5) * 2,
-        lastMove: Date.now(),
-        isGif: (data.src || '').endsWith('.gif')
-      };
-      if (pet.isGif && pet.src) {
-        loadPetImage(pet.src, () => {});
-      }
-      pets.push(pet);
-      addToGrid(pet);
-    }
-
-    function removePet(id) {
-      const idx = pets.findIndex(p => p.id === id);
-      if (idx !== -1) {
-        removeFromGrid(pets[idx]);
-        pets.splice(idx, 1);
-      }
-    }
-
-    canvas.addEventListener('mousedown', (e) => {
-      for (let i = pets.length - 1; i >= 0; i--) {
-        const pet = pets[i];
-        if (e.clientX >= pet.x && e.clientX <= pet.x + pet.width &&
-            e.clientY >= pet.y && e.clientY <= pet.y + pet.height) {
-          pet.dragging = true;
-          pet.dragOffsetX = e.clientX - pet.x;
-          pet.dragOffsetY = e.clientY - pet.y;
-          break;
-        }
-      }
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-      for (const pet of pets) {
-        if (pet.dragging) {
-          removeFromGrid(pet);
-          pet.x = e.clientX - pet.dragOffsetX;
-          pet.y = e.clientY - pet.dragOffsetY;
-          addToGrid(pet);
-        }
-      }
-    });
-
-    canvas.addEventListener('mouseup', () => {
-      for (const pet of pets) {
-        pet.dragging = false;
-      }
-    });
-
-    canvas.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      for (let i = pets.length - 1; i >= 0; i--) {
-        const pet = pets[i];
-        if (e.clientX >= pet.x && e.clientX <= pet.x + pet.width &&
-            e.clientY >= pet.y && e.clientY <= pet.y + pet.height) {
-          removePet(pet.id);
-          ws.send(JSON.stringify({ type: 'remove', id: pet.id }));
-          break;
-        }
-      }
-    });
-
-    function render() {
-      const now = Date.now();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const pet of pets) {
-        if (pet.dragging) continue;
-        if (!pet.isGif) {
-          pet.animTimer += 16;
-          if (pet.animTimer > 160) {
-            pet.animFrame = (pet.animFrame + 1) % 4;
-            pet.animTimer = 0;
-          }
-        }
-        if (now - pet.lastMove > MOVE_INTERVAL) {
-          const angle = Math.random() * Math.PI * 2;
-          pet.dx = Math.cos(angle);
-          pet.dy = Math.sin(angle);
-          pet.lastMove = now;
-        }
-        pet.x += pet.dx * ANIM_SPEED;
-        pet.y += pet.dy * ANIM_SPEED;
-        if (pet.x < 0) { pet.x = 0; pet.dx = -pet.dx; }
-        if (pet.x > canvas.width - pet.width) { pet.x = canvas.width - pet.width; pet.dx = -pet.dx; }
-        if (pet.y < 0) { pet.y = 0; pet.dy = -pet.dy; }
-        if (pet.y > canvas.height - pet.height) { pet.y = canvas.height - pet.height; pet.dy = -pet.dy; }
-        if (pet.isGif && pet.src && petImages[pet.src]) {
-          ctx.drawImage(petImages[pet.src], pet.x, pet.y, pet.width, pet.height);
-        } else {
-          const drawFn = drawFns[pet.shape] || drawFns[pet.name] || drawCatSprite;
-          drawFn(ctx, pet.x, pet.y, pet.animFrame, pet.color || '#ff6b6b');
-        }
-      }
-      requestAnimationFrame(render);
-    }
-    render();
-  </script>
+  <div id="stage-note" class="stage-note"></div>
+  <a class="back" href="/">Back to the room</a>
+  <script src="/shared/spatial.js"></script>
+  <script src="/shared/movement.js"></script>
+  <script src="/shared/session.js"></script>
+  <script src="/shared/sprites.js"></script>
+  <script src="/js/stage.js"></script>
+  <script src="/js/overlay.js"></script>
 </body>
 </html>

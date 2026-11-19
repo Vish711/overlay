@@ -1,20 +1,13 @@
 {
   "name": "overlay",
-  "version": "0.1.0",
-  "description": "Lightweight desktop overlay for real-time pets and GIFs between friends. Start with npm run background. That runs the localhost and the overlay without a console and without taking the mouse or keyboard.",
+  "version": "1.0.0",
+  "description": "Real-time pet rooms in the browser. Two people share a room id and pets walk on the page.",
   "main": "src/main/index.js",
   "scripts": {
-    "start": "electron .",
-    "server": "node src/main/server.js",
-    "background": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-background.ps1",
-    "dev": "concurrently \"npm run server\" \"electron .\"",
-    "test": "echo \"no tests yet\""
+    "start": "node src/main/index.js",
+    "test": "node --test tests"
   },
   "dependencies": {
-    "electron": "^33.0.0",
     "ws": "^8.18.0"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.0"
   }
 }
