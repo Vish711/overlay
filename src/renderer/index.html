@@ -2,52 +2,172 @@
 <html>
 <head>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, sans-serif;
-      padding: 20px;
-      background: #1a1a1a;
-      color: #fff;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
     }
-    h1 { margin-top: 0; }
-    input, button {
-      padding: 8px 12px;
-      margin: 4px 0;
-      border: 1px solid #444;
-      border-radius: 4px;
-      background: #2a2a2a;
-      color: #fff;
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px;
     }
-    button:hover { background: #3a3a3a; }
-    #friends { margin-top: 16px; }
+    h1 {
+      font-size: 24px;
+      color: #58a6ff;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card h2 {
+      font-size: 14px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      background: #0d1117;
+      color: #c9d1d9;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    input:focus { outline: none; border-color: #58a6ff; }
+    .btn-row { display: flex; gap: 8px; }
+    button {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      background: #21262d;
+      color: #c9d1d9;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #30363d; }
+    button.primary { background: #238636; border-color: #2ea043; color: #fff; }
+    button.primary:hover { background: #2ea043; }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #8b949e;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #484f58;
+    }
+    .dot.connected { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+    .dot.disconnected { background: #f85149; }
+    .room-info {
+      font-size: 13px;
+      color: #58a6ff;
+      padding: 8px 0;
+      min-height: 20px;
+    }
+    .friend-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
     .friend {
-      padding: 8px;
-      margin: 4px 0;
-      background: #2a2a2a;
-      border-radius: 4px;
+      padding: 6px 12px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 16px;
+      font-size: 13px;
+      color: #c9d1d9;
     }
-    #status { margin-top: 8px; color: #888; }
-    #send-msg { margin-top: 12px; }
-    #send-msg input { width: 200px; }
-    #send-msg button { margin-left: 4px; }
+    .pet-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .pet-item {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: border-color 0.15s, transform 0.1s;
+      background: #0d1117;
+    }
+    .pet-item:hover { border-color: #58a6ff; transform: scale(1.05); }
+    .pet-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .pet-name {
+      text-align: center;
+      font-size: 11px;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+    .chat-box {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-box input { margin-bottom: 0; flex: 1; }
+    .chat-box button { width: auto; white-space: nowrap; }
   </style>
 </head>
 <body>
-  <h1>Overlay</h1>
-  <input id="room" placeholder="Room ID" />
-  <input id="name" placeholder="Your name" value="player1" />
-  <button id="join">Join Room</button>
-  <button id="create">Create Room</button>
-  <div id="status">Disconnected</div>
-  <div id="room-info"></div>
-  <div id="friends"></div>
-  <div id="pets">
-    <h3>Send a pet</h3>
-    <div id="pet-list"></div>
+  <div class="container">
+    <h1>Overlay</h1>
+
+    <div class="card">
+      <h2>Connection</h2>
+      <input id="room" placeholder="Room ID (leave blank for random)" />
+      <input id="name" placeholder="Your name" value="player1" />
+      <div class="btn-row">
+        <button id="join" class="primary">Join Room</button>
+        <button id="create">Create & Join</button>
+      </div>
+      <div style="margin-top: 12px;">
+        <span class="status">
+          <span class="dot" id="status-dot"></span>
+          <span id="status">Disconnected</span>
+        </span>
+      </div>
+      <div id="room-info" class="room-info"></div>
+    </div>
+
+    <div class="card">
+      <h2>Online</h2>
+      <div id="friends" class="friend-list"></div>
+    </div>
+
+    <div class="card">
+      <h2>Send a Pet</h2>
+      <div id="pet-list" class="pet-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Chat</h2>
+      <div class="chat-box">
+        <input id="msg" placeholder="Type a message..." />
+        <button id="send">Send</button>
+      </div>
+    </div>
   </div>
-  <div id="send-msg">
-    <input id="msg" placeholder="Type a message..." />
-    <button id="send">Send</button>
-  </div>
+
   <script>
     const ws = new WebSocket('ws://localhost:55555');
     const roomInput = document.getElementById('room');
@@ -56,93 +176,55 @@
     const createBtn = document.getElementById('create');
     const roomInfo = document.getElementById('room-info');
     const friendsDiv = document.getElementById('friends');
-    const statusDiv = document.getElementById('status');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status');
     const msgInput = document.getElementById('msg');
     const sendBtn = document.getElementById('send');
     const petList = document.getElementById('pet-list');
 
     const uid = 'user-' + Math.random().toString(36).substr(2, 6);
-    const availablePets = [
-      { name: 'cat', color: '#ff6b6b', shape: 'cat' },
-      { name: 'dog', color: '#4ecdc4', shape: 'dog' },
-      { name: 'ghost', color: '#ffe66d', shape: 'ghost' },
-      { name: 'fire', color: '#ff8a5c', shape: 'fire' }
-    ];
 
-    availablePets.forEach((pet, i) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 64;
-      canvas.height = 64;
-      canvas.style.margin = '4px';
-      canvas.style.cursor = 'pointer';
-      canvas.style.border = '2px solid transparent';
-      canvas.title = pet.name;
-      const ctx = canvas.getContext('2d');
-      drawPixelArt(ctx, pet.shape, pet.color);
-      canvas.onclick = () => {
-        const dataUrl = canvas.toDataURL();
+    const petFiles = ['cat.gif', 'dog.gif', 'ghost.gif', 'fire.gif', 'star.gif', 'heart.gif'];
+    const petNames = { 'cat.gif': 'Cat', 'dog.gif': 'Dog', 'ghost.gif': 'Ghost', 'fire.gif': 'Fire', 'star.gif': 'Star', 'heart.gif': 'Heart' };
+
+    petFiles.forEach((filename, i) => {
+      const wrapper = document.createElement('div');
+      wrapper.style.textAlign = 'center';
+
+      const img = document.createElement('img');
+      img.src = '/pets/' + filename;
+      img.alt = petNames[filename];
+      img.title = petNames[filename];
+
+      const name = document.createElement('div');
+      name.className = 'pet-name';
+      name.textContent = petNames[filename];
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(name);
+      petList.appendChild(wrapper);
+
+      img.onclick = () => {
         ws.send(JSON.stringify({
           type: 'pet',
-          name: pet.name,
-          src: dataUrl,
+          name: petNames[filename],
+          src: '/pets/' + filename,
           x: 100 + i * 80,
           y: 100,
           width: 64,
           height: 64
         }));
       };
-      petList.appendChild(canvas);
     });
 
-    function drawPixelArt(ctx, shape, color) {
-      const s = 4;
-      ctx.fillStyle = color;
-      if (shape === 'cat') {
-        ctx.fillRect(4*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(8*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(3*s, 5*s, 8*s, 6*s);
-        ctx.fillRect(2*s, 6*s, 1*s, 2*s);
-        ctx.fillRect(11*s, 6*s, 1*s, 2*s);
-        ctx.fillRect(4*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(9*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(5*s, 7*s, 1*s, 1*s);
-        ctx.fillRect(9*s, 7*s, 1*s, 1*s);
-      } else if (shape === 'dog') {
-        ctx.fillRect(3*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(9*s, 3*s, 2*s, 2*s);
-        ctx.fillRect(2*s, 5*s, 10*s, 7*s);
-        ctx.fillRect(1*s, 7*s, 2*s, 3*s);
-        ctx.fillRect(12*s, 7*s, 2*s, 3*s);
-        ctx.fillRect(4*s, 12*s, 3*s, 2*s);
-        ctx.fillRect(8*s, 12*s, 3*s, 2*s);
-        ctx.fillRect(5*s, 8*s, 1*s, 1*s);
-        ctx.fillRect(9*s, 8*s, 1*s, 1*s);
-      } else if (shape === 'ghost') {
-        ctx.fillRect(3*s, 1*s, 9*s, 11*s);
-        ctx.fillRect(2*s, 3*s, 1*s, 8*s);
-        ctx.fillRect(13*s, 3*s, 1*s, 8*s);
-        ctx.fillRect(2*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(6*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(10*s, 11*s, 2*s, 2*s);
-        ctx.fillRect(14*s, 11*s, 2*s, 2*s);
-        ctx.fillStyle = '#333';
-        ctx.fillRect(5*s, 5*s, 2*s, 2*s);
-        ctx.fillRect(9*s, 5*s, 2*s, 2*s);
-      } else if (shape === 'fire') {
-        ctx.fillRect(5*s, 12*s, 5*s, 2*s);
-        ctx.fillRect(4*s, 10*s, 7*s, 2*s);
-        ctx.fillRect(5*s, 8*s, 5*s, 2*s);
-        ctx.fillRect(3*s, 6*s, 9*s, 2*s);
-        ctx.fillRect(5*s, 4*s, 5*s, 2*s);
-        ctx.fillRect(6*s, 2*s, 3*s, 2*s);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(7*s, 3*s, 1*s, 1*s);
-        ctx.fillRect(8*s, 5*s, 1*s, 1*s);
-      }
-    }
-
-    ws.onopen = () => { statusDiv.textContent = 'Connected'; };
-    ws.onclose = () => { statusDiv.textContent = 'Disconnected'; };
+    ws.onopen = () => {
+      statusDot.className = 'dot connected';
+      statusText.textContent = 'Connected';
+    };
+    ws.onclose = () => {
+      statusDot.className = 'dot disconnected';
+      statusText.textContent = 'Disconnected';
+    };
 
     joinBtn.onclick = () => {
       ws.send(JSON.stringify({ type: 'join', roomId: roomInput.value, name: nameInput.value, id: uid }));
@@ -159,7 +241,7 @@
       msgInput.value = '';
     };
 
-   ws.onmessage = (e) => {
+    ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
       if (msg.type === 'presence') {
         friendsDiv.innerHTML = msg.users.map(u =>
