@@ -95,7 +95,7 @@
     }
     .pet-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
     .pet-item {
@@ -107,12 +107,16 @@
       overflow: hidden;
       transition: border-color 0.15s, transform 0.1s;
       background: #0d1117;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
     .pet-item:hover { border-color: #58a6ff; transform: scale(1.05); }
-    .pet-item img {
+    .pet-item canvas {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      image-rendering: pixelated;
     }
     .pet-name {
       text-align: center;
@@ -184,38 +188,173 @@
 
     const uid = 'user-' + Math.random().toString(36).substr(2, 6);
 
-    const petFiles = ['cat.gif', 'dog.gif', 'ghost.gif', 'fire.gif', 'star.gif', 'heart.gif'];
-    const petNames = { 'cat.gif': 'Cat', 'dog.gif': 'Dog', 'ghost.gif': 'Ghost', 'fire.gif': 'Fire', 'star.gif': 'Star', 'heart.gif': 'Heart' };
+    const pets = [
+      { name: 'Cat', color: '#ff6b6b', shape: 'cat' },
+      { name: 'Dog', color: '#4ecdc4', shape: 'dog' },
+      { name: 'Ghost', color: '#ffe66d', shape: 'ghost' },
+      { name: 'Fire', color: '#ff8a5c', shape: 'fire' },
+      { name: 'Star', color: '#a29bfe', shape: 'star' },
+      { name: 'Heart', color: '#fd79a8', shape: 'heart' }
+    ];
 
-    petFiles.forEach((filename, i) => {
+    const frameSizes = { cat: 16, dog: 16, ghost: 16, fire: 16, star: 16, heart: 16 };
+    const frames = { cat: 4, dog: 4, ghost: 4, fire: 4, star: 2, heart: 2 };
+    const animTimers = {};
+
+    pets.forEach((pet, i) => {
       const wrapper = document.createElement('div');
-      wrapper.style.textAlign = 'center';
+      wrapper.className = 'pet-item';
 
-      const img = document.createElement('img');
-      img.src = '/pets/' + filename;
-      img.alt = petNames[filename];
-      img.title = petNames[filename];
+      const canvas = document.createElement('canvas');
+      canvas.width = frameSizes[pet.shape] * 4;
+      canvas.height = frameSizes[pet.shape] * 4;
+      canvas.style.imageRendering = 'pixelated';
 
       const name = document.createElement('div');
       name.className = 'pet-name';
-      name.textContent = petNames[filename];
+      name.textContent = pet.name;
 
-      wrapper.appendChild(img);
+      wrapper.appendChild(canvas);
       wrapper.appendChild(name);
       petList.appendChild(wrapper);
 
-      img.onclick = () => {
+      wrapper.onclick = () => {
         ws.send(JSON.stringify({
           type: 'pet',
-          name: petNames[filename],
-          src: '/pets/' + filename,
+          name: pet.name,
+          shape: pet.shape,
+          color: pet.color,
           x: 100 + i * 80,
           y: 100,
           width: 64,
           height: 64
         }));
       };
+
+      animTimers[pet.name] = { frame: 0, timer: 0 };
     });
+
+    function drawStarFrame(ctx, frame) {
+      const s = 4;
+      ctx.fillStyle = '#a29bfe';
+      if (frame === 0) {
+        ctx.fillRect(5*s, 1*s, 6*s, 2*s);
+        ctx.fillRect(3*s, 3*s, 10*s, 2*s);
+        ctx.fillRect(1*s, 5*s, 14*s, 2*s);
+        ctx.fillRect(3*s, 7*s, 10*s, 2*s);
+        ctx.fillRect(5*s, 9*s, 6*s, 2*s);
+        ctx.fillRect(6*s, 11*s, 4*s, 2*s);
+      } else {
+        ctx.fillRect(5*s, 1*s, 6*s, 2*s);
+        ctx.fillRect(3*s, 3*s, 10*s, 2*s);
+        ctx.fillRect(1*s, 5*s, 14*s, 2*s);
+        ctx.fillRect(3*s, 7*s, 10*s, 2*s);
+        ctx.fillRect(5*s, 9*s, 6*s, 2*s);
+        ctx.fillRect(6*s, 11*s, 4*s, 2*s);
+        ctx.fillStyle = '#dfe6e9';
+        ctx.fillRect(7*s, 4*s, 2*s, 2*s);
+      }
+    }
+
+    function drawHeartFrame(ctx, frame) {
+      const s = 4;
+      ctx.fillStyle = '#fd79a8';
+      if (frame === 0) {
+        ctx.fillRect(2*s, 2*s, 5*s, 5*s);
+        ctx.fillRect(9*s, 2*s, 5*s, 5*s);
+        ctx.fillRect(1*s, 7*s, 7*s, 5*s);
+        ctx.fillRect(8*s, 7*s, 7*s, 5*s);
+        ctx.fillRect(4*s, 12*s, 4*s, 2*s);
+        ctx.fillRect(5*s, 14*s, 2*s, 2*s);
+      } else {
+        ctx.fillRect(2*s, 2*s, 5*s, 5*s);
+        ctx.fillRect(9*s, 2*s, 5*s, 5*s);
+        ctx.fillRect(1*s, 7*s, 7*s, 5*s);
+        ctx.fillRect(8*s, 7*s, 7*s, 5*s);
+        ctx.fillRect(4*s, 12*s, 4*s, 2*s);
+        ctx.fillRect(5*s, 14*s, 2*s, 2*s);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(3*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(10*s, 3*s, 2*s, 2*s);
+      }
+    }
+
+    function drawFrame(ctx, shape, frame, color) {
+      const s = 4;
+      ctx.fillStyle = color;
+      if (shape === 'cat') {
+        ctx.fillRect(4*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(8*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(3*s, 5*s + frame, 8*s, 6*s);
+        ctx.fillRect(2*s, 6*s + frame, 1*s, 2*s);
+        ctx.fillRect(11*s, 6*s + frame, 1*s, 2*s);
+        ctx.fillRect(4*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(9*s, 11*s, 2*s, 2*s);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(5*s, 7*s, 1*s, 1*s);
+        ctx.fillRect(9*s, 7*s, 1*s, 1*s);
+      } else if (shape === 'dog') {
+        ctx.fillRect(3*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(9*s, 3*s, 2*s, 2*s);
+        ctx.fillRect(2*s, 5*s, 10*s, 7*s);
+        ctx.fillRect(1*s, 7*s + frame, 2*s, 3*s);
+        ctx.fillRect(12*s, 7*s + frame, 2*s, 3*s);
+        ctx.fillRect(4*s, 12*s, 3*s, 2*s);
+        ctx.fillRect(8*s, 12*s, 3*s, 2*s);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(5*s, 8*s, 1*s, 1*s);
+        ctx.fillRect(9*s, 8*s, 1*s, 1*s);
+      } else if (shape === 'ghost') {
+        const wave = (frame % 2 === 0) ? 0 : s;
+        ctx.fillRect(3*s, 1*s, 9*s, 11*s);
+        ctx.fillRect(2*s, 3*s + wave, 1*s, 8*s);
+        ctx.fillRect(13*s, 3*s - wave, 1*s, 8*s);
+        ctx.fillRect(2*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(6*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(10*s, 11*s, 2*s, 2*s);
+        ctx.fillRect(14*s, 11*s, 2*s, 2*s);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(5*s, 5*s, 2*s, 2*s);
+        ctx.fillRect(9*s, 5*s, 2*s, 2*s);
+      } else if (shape === 'fire') {
+        const flicker = (frame % 2 === 0) ? 0 : s;
+        ctx.fillRect(5*s, 12*s, 5*s, 2*s);
+        ctx.fillRect(4*s, 10*s, 7*s, 2*s);
+        ctx.fillRect(5*s, 8*s, 5*s, 2*s);
+        ctx.fillRect(3*s, 6*s, 9*s, 2*s);
+        ctx.fillRect(5*s, 4*s + flicker, 5*s, 2*s);
+        ctx.fillRect(6*s, 2*s + flicker, 3*s, 2*s);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(7*s, 3*s, 1*s, 1*s);
+        ctx.fillRect(8*s, 5*s, 1*s, 1*s);
+      } else if (shape === 'star') {
+        drawStarFrame(ctx, frame);
+      } else if (shape === 'heart') {
+        drawHeartFrame(ctx, frame);
+      }
+    }
+
+    function animatePets() {
+      pets.forEach((pet) => {
+        const item = petList.children[pets.indexOf(pet)];
+        if (!item) return;
+        const canvas = item.querySelector('canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const s = frameSizes[pet.shape];
+        const maxFrames = frames[pet.shape] || 1;
+        const timer = animTimers[pet.name];
+        timer.timer++;
+        if (timer.timer > 20) {
+          timer.frame = (timer.frame + 1) % maxFrames;
+          timer.timer = 0;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawFrame(ctx, pet.shape, timer.frame, pet.color);
+      });
+      requestAnimationFrame(animatePets);
+    }
+    animatePets();
 
     ws.onopen = () => {
       statusDot.className = 'dot connected';
