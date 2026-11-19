@@ -90,9 +90,11 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'send' && room) {
+      const relayData = { type: 'send', text: msg.text, roomId: room };
+      if (msg.pet) relayData.pet = msg.pet;
       rooms.get(room).forEach((client) => {
         if (client !== ws && client.readyState === 1) {
-          client.send(JSON.stringify({ type: 'send', text: msg.text, roomId: room }));
+          client.send(JSON.stringify(relayData));
         }
       });
     }

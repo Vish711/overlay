@@ -100,7 +100,6 @@
     }
     .pet-item {
       width: 100%;
-      aspect-ratio: 1;
       border: 2px solid #30363d;
       border-radius: 8px;
       cursor: pointer;
@@ -110,10 +109,18 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
     }
     .pet-item:hover { border-color: #58a6ff; transform: scale(1.05); }
-    .pet-item canvas {
+    .pet-item.selected { border-color: #58a6ff; box-shadow: 0 0 8px #58a6ff44; }
+    .pet-canvas-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #0d1117;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pet-canvas-wrap canvas {
       width: 100%;
       height: 100%;
       image-rendering: pixelated;
@@ -122,8 +129,30 @@
       text-align: center;
       font-size: 11px;
       color: #8b949e;
-      margin-top: 4px;
+      padding: 4px;
     }
+    .pet-msg-input {
+      width: 100%;
+      padding: 6px 8px;
+      border: none;
+      border-top: 1px solid #30363d;
+      background: #0d1117;
+      color: #c9d1d9;
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+    .pet-msg-input:focus { outline: none; }
+    .pet-send-btn {
+      width: 100%;
+      padding: 4px;
+      border: none;
+      border-top: 1px solid #30363d;
+      background: #21262d;
+      color: #8b949e;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .pet-send-btn:hover { background: #30363d; color: #58a6ff; }
     .chat-box {
       display: flex;
       gap: 8px;
@@ -171,6 +200,15 @@
         <button id="send">Send</button>
       </div>
     </div>
+
+    <div class="card">
+      <h2>Chat</h2>
+      <div id="chat-log" style="max-height: 120px; overflow-y: auto; margin-bottom: 8px; font-size: 13px; color: #8b949e;"></div>
+      <div class="chat-box">
+        <input id="msg" placeholder="Type a message..." />
+        <button id="send">Send</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -206,6 +244,10 @@
     pets.forEach((pet, i) => {
       const wrapper = document.createElement('div');
       wrapper.className = 'pet-item';
+      wrapper.dataset.name = pet.name;
+
+      const canvasWrap = document.createElement('div');
+      canvasWrap.className = 'pet-canvas-wrap';
 
       const canvas = document.createElement('canvas');
       canvas.width = frameSizes[pet.shape] * 4;
@@ -216,21 +258,38 @@
       name.className = 'pet-name';
       name.textContent = pet.name;
 
-      wrapper.appendChild(canvas);
+      const msgInput = document.createElement('input');
+      msgInput.className = 'pet-msg-input';
+      msgInput.placeholder = 'type...';
+
+      const sendBtn = document.createElement('button');
+      sendBtn.className = 'pet-send-btn';
+      sendBtn.textContent = 'Send with ' + pet.name;
+
+      canvasWrap.appendChild(canvas);
+      wrapper.appendChild(canvasWrap);
       wrapper.appendChild(name);
+      wrapper.appendChild(msgInput);
+      wrapper.appendChild(sendBtn);
       petList.appendChild(wrapper);
 
-      wrapper.onclick = () => {
+      wrapper.onclick = (e) => {
+        if (e.target === msgInput || e.target === sendBtn) return;
+        document.querySelectorAll('.pet-item').forEach(el => el.classList.remove('selected'));
+        wrapper.classList.add('selected');
+        selectedPet = pet;
+      };
+
+      sendBtn.onclick = () => {
+        const text = msgInput.value.trim();
+        if (!text) return;
         ws.send(JSON.stringify({
-          type: 'pet',
-          name: pet.name,
-          shape: pet.shape,
-          color: pet.color,
-          x: 100 + i * 80,
-          y: 100,
-          width: 64,
-          height: 64
+          type: 'send',
+          text: text,
+          roomId: roomInput.value,
+          pet: { name: pet.name, shape: pet.shape, color: pet.color }
         }));
+        msgInput.value = '';
       };
 
       animTimers[pet.name] = { frame: 0, timer: 0 };
@@ -393,7 +452,15 @@
         const entry = document.createElement('div');
         entry.style.padding = '4px 0';
         entry.style.borderBottom = '1px solid #21262d';
-        entry.textContent = '[' + msg.roomId + '] ' + msg.text;
+        if (msg.pet) {
+          const petIcon = document.createElement('span');
+          petIcon.textContent = '🐾';
+          entry.appendChild(petIcon);
+          entry.appendChild(document.createTextNode(' ' + msg.pet.name + ' says: '));
+          entry.appendChild(document.createTextNode(msg.text));
+        } else {
+          entry.textContent = '[' + msg.roomId + '] ' + msg.text;
+        }
         chatLog.appendChild(entry);
         chatLog.scrollTop = chatLog.scrollHeight;
       }
