@@ -83,23 +83,36 @@
     }
 
     function addPet(data) {
-      const img = new Image();
-      img.onload = () => {
-        const pet = {
-          id: data.id,
-          image: img,
-          x: data.x,
-          y: data.y,
-          width: data.width || 64,
-          height: data.height || 64,
-          dragging: false,
-          dragOffsetX: 0,
-          dragOffsetY: 0
-        };
-        pets.push(pet);
-        addToGrid(pet);
+      const pet = {
+        id: 'pet-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+        name: data.name,
+        src: data.src,
+        x: data.x,
+        y: data.y,
+        width: data.width || 64,
+        height: data.height || 64,
+        dragging: false,
+        dragOffsetX: 0,
+        dragOffsetY: 0,
+        isGif: data.src && data.src.endsWith('.gif'),
+        gifFrames: [],
+        currentFrame: 0,
+        frameTimer: 0
       };
-      img.src = data.src;
+
+      if (pet.isGif) {
+        const img = new Image();
+        img.onload = () => {
+          pet.image = img;
+        };
+        img.src = data.src;
+      } else {
+        pet.image = new Image();
+        pet.image.src = data.src;
+      }
+
+      pets.push(pet);
+      addToGrid(pet);
     }
 
     function removePet(id) {
@@ -140,10 +153,25 @@
       }
     });
 
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      for (let i = pets.length - 1; i >= 0; i--) {
+        const pet = pets[i];
+        if (e.clientX >= pet.x && e.clientX <= pet.x + pet.width &&
+            e.clientY >= pet.y && e.clientY <= pet.y + pet.height) {
+          removePet(pet.id);
+          ws.send(JSON.stringify({ type: 'remove', id: pet.id }));
+          break;
+        }
+      }
+    });
+
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const pet of pets) {
-        ctx.drawImage(pet.image, pet.x, pet.y, pet.width, pet.height);
+        if (pet.image) {
+          ctx.drawImage(pet.image, pet.x, pet.y, pet.width, pet.height);
+        }
       }
       requestAnimationFrame(render);
     }

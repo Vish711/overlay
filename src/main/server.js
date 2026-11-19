@@ -14,6 +14,19 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(data);
     });
+  } else if (req.url.startsWith('/pets/')) {
+    const petPath = path.join(__dirname, '../../assets/pets', req.url.replace('/pets/', ''));
+    fs.readFile(petPath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+      const ext = path.extname(petPath);
+      const type = ext === '.gif' ? 'image/gif' : 'image/png';
+      res.writeHead(200, { 'Content-Type': type });
+      res.end(data);
+    });
   } else {
     res.writeHead(404);
     res.end('Not found');

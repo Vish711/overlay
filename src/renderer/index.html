@@ -37,6 +37,10 @@
   <button id="join">Join Room</button>
   <div id="status">Disconnected</div>
   <div id="friends"></div>
+  <div id="pets">
+    <h3>Send a pet</h3>
+    <div id="pet-list"></div>
+  </div>
   <div id="send-msg">
     <input id="msg" placeholder="Type a message..." />
     <button id="send">Send</button>
@@ -49,6 +53,37 @@
     const statusDiv = document.getElementById('status');
     const msgInput = document.getElementById('msg');
     const sendBtn = document.getElementById('send');
+    const petList = document.getElementById('pet-list');
+
+    const availablePets = [
+      { name: 'cat', src: 'https://media.giphy.com/media/MDJ7IWxgDYtb2/giphy.gif', width: 64, height: 64 },
+      { name: 'dog', src: 'https://media.giphy.com/media/3oriO04MiRIucIKngJ/giphy.gif', width: 64, height: 64 },
+      { name: 'ghost', src: 'https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif', width: 64, height: 64 },
+      { name: 'fire', src: 'https://media.giphy.com/media/26tOZ42Mg6pbTevuM/giphy.gif', width: 64, height: 64 }
+    ];
+
+    availablePets.forEach((pet, i) => {
+      const img = document.createElement('img');
+      img.src = pet.src;
+      img.width = 64;
+      img.height = 64;
+      img.style.margin = '4px';
+      img.style.cursor = 'pointer';
+      img.style.border = '2px solid transparent';
+      img.title = pet.name;
+      img.onclick = () => {
+        ws.send(JSON.stringify({
+          type: 'pet',
+          name: pet.name,
+          src: pet.src,
+          x: 100 + i * 80,
+          y: 100,
+          width: pet.width,
+          height: pet.height
+        }));
+      };
+      petList.appendChild(img);
+    });
 
     ws.onopen = () => { statusDiv.textContent = 'Connected'; };
     ws.onclose = () => { statusDiv.textContent = 'Disconnected'; };
