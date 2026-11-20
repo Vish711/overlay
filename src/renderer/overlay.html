@@ -14,39 +14,43 @@
       font-family: system-ui, sans-serif;
     }
     canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
+      position: fixed;
+      inset: 0;
       width: 100%;
       height: 100%;
+      pointer-events: none;
       image-rendering: pixelated;
     }
     .stage-note {
-      position: absolute;
+      position: fixed;
+      z-index: 2;
       left: 12px;
+      right: 12px;
       bottom: 10px;
       color: #8b949e;
       font-size: 13px;
+      text-align: center;
       pointer-events: none;
     }
-    a.back {
-      position: absolute;
+    a.back, button.cover {
+      position: fixed;
+      z-index: 2;
       top: 10px;
-      right: 12px;
       color: #58a6ff;
       font-size: 13px;
+      background: transparent;
+      border: none;
+      padding: 0;
     }
+    a.back { right: 12px; }
+    button.cover { left: 12px; }
   </style>
 </head>
 <body>
   <canvas id="overlay"></canvas>
   <div id="stage-note" class="stage-note"></div>
+  <button id="fill-screen" class="cover" type="button">Cover the screen</button>
   <a class="back" href="/">Back to the room</a>
-  <script src="/shared/spatial.js"></script>
-  <script src="/shared/movement.js"></script>
-  <script src="/shared/session.js"></script>
-  <script src="/shared/sprites.js"></script>
-  <script src="/js/stage.js"></script>
-  <script src="/js/overlay.js"></script>
+  <script type="module" src="/js/overlay.js"></script>
 </body>
 </html>

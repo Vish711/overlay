@@ -1,6 +1,6 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { stepPets, resolvePair, rotateToward, wrapAngle, blankPet } = require('../src/shared/movement');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { stepPets, resolvePair, rotateToward, wrapAngle, blankPet } from '../src/shared/movement.js';
 
 test('a head-on hit swaps the speeds and separates the circles', function () {
   const a = blankPet({ id: 'a', x: 0, y: 0, vx: 30, vy: 0 });
@@ -78,9 +78,9 @@ test('a pet with a home walks back to it', function () {
   const pet = blankPet({
     id: 'p',
     shape: 'cat',
-    x: 40,
+    x: 0,
     y: 80,
-    homeX: 320,
+    homeX: 620,
     homeY: 80,
     state: 'wander',
     stateUntil: 0
@@ -93,7 +93,7 @@ test('a pet with a home walks back to it', function () {
   assert.ok(pet.x > 120, 'pet walked home, x=' + pet.x);
 });
 
-test('a pet sitting on its home stays put', function () {
+test('a pet near the spot you dropped it keeps walking', function () {
   const pet = blankPet({
     id: 'p',
     shape: 'star',
@@ -102,12 +102,58 @@ test('a pet sitting on its home stays put', function () {
     homeX: 100,
     homeY: 100,
     state: 'wander',
-    stateUntil: 0,
-    vx: 40
+    stateUntil: 0
   });
-  stepPets([pet], { width: 800, height: 600 }, 1 / 60, 1000, function () { return 0.1; });
-  assert.equal(pet.state, 'sit');
-  assert.equal(pet.vx, 0);
+  const start = pet.x;
+  let now = 1000;
+  for (let i = 0; i < 90; i++) {
+    stepPets([pet], { width: 800, height: 600 }, 1 / 60, now, function () { return 0.5; });
+    now += 16;
+  }
+  assert.ok(Math.abs(pet.x - start) > 15, 'star x moved from ' + start + ' to ' + pet.x);
+});
+
+test('come walks toward the person who asked', function () {
+  const pet = blankPet({
+    id: 'b',
+    userId: 'bob',
+    x: 80,
+    y: 200,
+    heading: 0,
+    state: 'come',
+    stateUntil: 1e15,
+    focusId: 'ann'
+  });
+  const caller = blankPet({
+    id: 'ann',
+    userId: 'ann',
+    x: 460,
+    y: 200,
+    state: 'sit',
+    stateUntil: 1e15
+  });
+  const start = pet.x;
+  let now = 1000;
+  for (let i = 0; i < 120; i++) {
+    stepPets([pet, caller], { width: 800, height: 600 }, 1 / 60, now, function () { return 0.5; });
+    now += 16;
+  }
+  assert.ok(pet.x > start + 60, 'pet walked toward the caller, x=' + pet.x);
+});
+
+test('run keeps going the way it was pointed', function () {
+  const pet = blankPet({
+    id: 'r',
+    x: 40,
+    y: 200,
+    heading: 0,
+    wanderTarget: 0,
+    state: 'run',
+    stateUntil: 1e15
+  });
+  const start = pet.x;
+  stepPets([pet], { width: 800, height: 600 }, 1 / 60, 1000, function () { return 0.5; });
+  assert.ok(pet.x > start);
 });
 
 test('turning takes the short way around the circle', function () {

@@ -1,7 +1,6 @@
-// The site is the browser. This file starts the same server as `npm start`
-// for anyone who runs `node src/main/index.js`.
+// Starts the browser server. `npm start` compiles this, then runs it.
 
-const { start, DEFAULT_PORT, lanAddresses } = require('./server');
+import { start, DEFAULT_PORT, lanAddresses } from './server.js';
 
 start(DEFAULT_PORT, function () {
   console.log('Open http://localhost:' + DEFAULT_PORT);

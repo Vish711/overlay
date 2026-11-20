@@ -2,12 +2,19 @@
   "name": "overlay",
   "version": "1.0.0",
   "description": "Real-time pet rooms in the browser. Two people share a room id and pets walk on the page.",
-  "main": "src/main/index.js",
+  "type": "module",
+  "main": "dist/src/main/index.js",
   "scripts": {
-    "start": "node src/main/index.js",
-    "test": "node --test tests"
+    "build": "tsc",
+    "start": "tsc && node dist/src/main/index.js",
+    "test": "tsc && node --test dist/tests"
   },
   "dependencies": {
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.0",
+    "typescript": "^5.8.0"
   }
 }

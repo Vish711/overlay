@@ -104,10 +104,13 @@
     .friend {
       padding: 6px 12px;
       background: #21262d;
+      color: #c9d1d9;
       border: 1px solid #30363d;
       border-radius: 16px;
+      font: inherit;
       font-size: 13px;
     }
+    .friend.selected { border-color: #58a6ff; }
     .empty { color: #8b949e; font-size: 13px; }
     .pet-grid {
       display: grid;
@@ -159,27 +162,30 @@
     .chat-line { padding: 6px 0; border-bottom: 1px solid #21262d; }
     .who { display: block; color: #58a6ff; font-size: 12px; margin-bottom: 2px; }
     .stage-wrap {
-      position: relative;
-      height: 520px;
-      margin-bottom: 12px;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #090c10;
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      overflow: visible;
     }
     .stage-wrap canvas {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       display: block;
+      pointer-events: none;
       image-rendering: pixelated;
     }
     .stage-note {
-      position: absolute;
-      left: 10px;
-      bottom: 8px;
-      right: 10px;
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 10px;
+      z-index: 6;
       color: #8b949e;
       font-size: 12px;
+      text-align: center;
       pointer-events: none;
     }
     a.fullpage {
@@ -190,16 +196,25 @@
     }
     .pet-item.selected { border-color: #58a6ff; box-shadow: 0 0 0 1px #58a6ff; }
     .composer {
-      position: absolute;
-      z-index: 2;
+      position: fixed;
+      z-index: 6;
+      pointer-events: auto;
       display: flex;
       gap: 6px;
-      width: 230px;
+      width: 340px;
       padding: 6px;
       background: rgba(22, 27, 34, 0.96);
       border: 1px solid #30363d;
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    .composer select {
+      width: 108px;
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 6px;
     }
     .composer[hidden] { display: none; }
     .composer input { margin: 0; flex: 1; padding: 8px 10px; }
@@ -209,7 +224,7 @@
 <body>
   <div class="container">
     <h1>Overlay</h1>
-    <p class="tagline">One pet per person, floating on the page. Type under yours. Your friend sees that pet say it.</p>
+    <p class="tagline">One pet per person, overlaid on the whole screen. Type under yours. Your friend sees that pet say it.</p>
 
     <div class="card">
       <h2>Room</h2>
@@ -229,12 +244,18 @@
       </div>
       <div id="room-info" class="room-info"></div>
       <div id="note" class="note"></div>
-      <a class="fullpage" href="/overlay" target="_blank">Open a full-page pet window</a>
+      <div class="btn-row" style="margin-top: 8px;">
+        <button id="fill-screen" type="button">Cover the screen</button>
+      </div>
+      <a class="fullpage" href="/overlay" target="_blank">Open the overlay on another screen</a>
     </div>
 
     <div class="stage-wrap">
       <canvas id="stage"></canvas>
       <form id="composer" class="composer" hidden>
+        <select id="pet-to" aria-label="Send to">
+          <option value="">Everyone</option>
+        </select>
         <input id="pet-line" maxlength="80" placeholder="Message" autocomplete="off" />
         <button id="pet-send" type="submit">Send</button>
       </form>
@@ -250,7 +271,7 @@
 
     <div class="card">
       <h2>Your pet</h2>
-      <p class="hint">Click an animal to put it on the page. Type in the box under your pet. The bubble says Ready when there is a new line.</p>
+      <p class="hint">Click an animal. It floats over this whole window. In the box under your pet, choose Everyone or one person. sit, come, run, and dance tell that pet what to do. Any other line is just said.</p>
       <div id="pet-list" class="pet-grid"></div>
       <div class="btn-row" style="margin-top: 10px;">
         <button id="clear-pets" type="button">Hide my pet</button>
@@ -262,11 +283,6 @@
       <div id="chat-log" class="chat-log"></div>
     </div>
   </div>
-  <script src="/shared/spatial.js"></script>
-  <script src="/shared/movement.js"></script>
-  <script src="/shared/session.js"></script>
-  <script src="/shared/sprites.js"></script>
-  <script src="/js/stage.js"></script>
-  <script src="/js/client.js"></script>
+  <script type="module" src="/js/client.js"></script>
 </body>
 </html>

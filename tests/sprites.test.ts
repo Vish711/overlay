@@ -1,6 +1,6 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { checkArt, PETS, frameCount } = require('../src/shared/sprites');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { checkArt, PETS, frameCount } from '../src/shared/sprites.js';
 
 test('every pet frame is a 16 by 16 picture', function () {
   assert.deepEqual(checkArt(), []);

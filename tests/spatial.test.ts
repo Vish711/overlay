@@ -1,8 +1,16 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { buildHash, queryNearby, CELL } = require('../src/shared/spatial');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildHash, queryNearby, CELL } from '../src/shared/spatial.js';
 
-function pet(id, x, y) {
+interface Sample {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function pet(id: string, x: number, y: number): Sample {
   return { id: id, x: x, y: y, width: 64, height: 64 };
 }
 
@@ -11,7 +19,7 @@ test('nearby pets share a cell neighborhood and far pets do not', function () {
   const beside = pet('beside', 50, 10);
   const far = pet('far', 400, 400);
   const hash = buildHash([here, beside, far], CELL);
-  const ids = queryNearby(hash, here).map(function (p) { return p.id; });
+  const ids = queryNearby(hash, here).map(function (item) { return item.id; });
   assert.ok(ids.indexOf('beside') !== -1);
   assert.ok(ids.indexOf('far') === -1);
   assert.ok(ids.indexOf('here') === -1);
